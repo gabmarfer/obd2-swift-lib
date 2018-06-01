@@ -158,7 +158,8 @@ class InitScanerOperation: StreamHandleOperation {
                 self.`protocol` = elmProtocolMap[Int(index)]
             } else {
                 let index = reader.readBuffer[searchIndex] ^ 0x40
-                self.`protocol` = elmProtocolMap[Int(index)]
+                //                self.`protocol` = elmProtocolMap[Int(index)]
+                self.`protocol` = index >= elmProtocolMap.endIndex ? elmProtocolMap.last : elmProtocolMap[Int(index)]
             }
             
             break
