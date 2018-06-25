@@ -158,15 +158,15 @@ class InitScanerOperation: StreamHandleOperation {
                 self.`protocol` = elmProtocolMap[Int(index)]
             } else {
                 let index = reader.readBuffer[searchIndex] ^ 0x40
-                //                self.`protocol` = elmProtocolMap[Int(index)]
-                self.`protocol` = index >= elmProtocolMap.endIndex ? elmProtocolMap.last : elmProtocolMap[Int(index)]
+//                self.`protocol` = elmProtocolMap[Int(index)]
+                self.`protocol` = index >= elmProtocolMap.endIndex ? .none : elmProtocolMap[Int(index)]
             }
             
             break
         case .search:
             let buffer = reader.readBuffer
             
-            let resp = Parser.package.decode(data: buffer, length: buffer.count)
+            let resp = Parser.package.decode(data: buffer, length: buffer.count, command: command)
             var extendPIDSearch	= false
             
             let morePIDs = buildSupportedSensorList(data: resp.data!, pidGroup: Int(currentPIDGroup))
@@ -223,7 +223,8 @@ fileprivate func buildSupportedSensorList(data : Data, pidGroup : Int) -> Bool {
             pid += 1
             
             if(supported) {
-                if NOT_SEARCH_PID(pid) && pid <= 0x4E && !supportedSensorList.contains(where: {$0 == pid}){
+                // Add support to PID 0x5C
+                if NOT_SEARCH_PID(pid) && pid <= 0x4E && pid != 0x5C && !supportedSensorList.contains(where: {$0 == pid}){
                     supportedSensorList.append(pid)
                 }
             }

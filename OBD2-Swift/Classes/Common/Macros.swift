@@ -30,6 +30,7 @@ func IS_INT_VALUE(pid : Int8, sensor : OBD2Sensor) -> Bool	{
     (pid >= 0x2C && pid <= 0x33) ||
     (pid >= 0x3C && pid <= 0x3F) ||
     (pid >= 0x43 && pid <= 0x4E) ||
+    (pid == 0x5C) || // Add support to PID 5C
     (pid >= 0x14 && pid <= 0x1B && sensor.rawValue == 0x02) ||
     (pid >= 0x24 && pid <= 0x2B && sensor.rawValue == 0x02) ||
     (pid >= 0x34 && pid <= 0x3B && sensor.rawValue == 0x02)

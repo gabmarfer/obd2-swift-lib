@@ -10,7 +10,7 @@ import UIKit
 import OBD2_Swift
 
 class ViewController: UIViewController {
-    static var host = "192.168.0.10"
+    static var host = "192.168.1.72"
     static var port = 35000
     
     //var scanTool = ELM327(host: host , port: port)

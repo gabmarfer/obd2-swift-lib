@@ -63,7 +63,7 @@ class CommandOperation: StreamHandleOperation {
     
     private func onReadEnd() {
         let package = Package(buffer: reader.readBuffer, length: reader.readBufferLenght)
-        let response = Parser.package.read(package: package)
+        let response = Parser.package.read(package: package, command: command)
         onReceiveResponse?(response)
         readCompleted = true
     }

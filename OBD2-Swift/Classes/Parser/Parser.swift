@@ -13,7 +13,7 @@ class Parser {
   static let package = PackageReader()
   
   class StringParser {
-    let kResponseFinishedCode : UInt8	=	0x3E
+    let kResponseFinishedCode : UInt8	=	0x3E // '>' character
     
     func toInt(hexString str: String) -> Int {
       return Int(strtoul(str, nil, 16))
@@ -99,8 +99,8 @@ class Parser {
   
   //Parsing command response
   class PackageReader {
-    func read(package: Package) -> Response {
-      return parseResponse(package: package)
+    func read(package: Package, command: DataRequest) -> Response {
+        return parseResponse(package: package, command: command)
     }
     
     private func optimize(package: inout Package){
@@ -124,87 +124,95 @@ class Parser {
       }
     }
     
-    private func parseResponse(package p : Package) -> Response {
-      var package = p
-      optimize(package: &package)
-      
-      var response = Response()
-      
-      if !package.isError && package.isData {
-        var responseComponents = package.strigDescriptor.components(separatedBy: "\r")
+    private func parseResponse(package p : Package, command: DataRequest) -> Response {
+        var package = p
+        optimize(package: &package)
         
-        var decodeBufLength = 0
-        var decodeBuf = [UInt8]()
+        var response = Response()
         
-        //Remove package descriptors from array
-        if responseComponents.count > 2 {
-          compress(components : &responseComponents, outputSize : &decodeBufLength)
-        }
-        
-        for resp in responseComponents {
-          if Parser.string.isSerching(resp) && Parser.string.isStopped(resp){
-            // A common reply if PID search occuring for the first time
-            // at this drive cycle
-            break
-          }
-          
-          // make byte array from string response
-          let chunks = resp.components(separatedBy: " ").filter({$0 != ""})
-
-          for c in chunks {
-            let value = Parser.string.toUInt8(hexString: c)
-            decodeBuf.append(UInt8(value))
-          }
-        }//TODO: - Handle negative
-        
-        if decodeBufLength == 0 {
-          decodeBufLength = decodeBuf.count
+        if !package.isError && package.isData {
+            var responseComponents = package.strigDescriptor.components(separatedBy: "\r")
+            
+            var decodeBufLength = 0
+            var decodeBuf = [UInt8]()
+            
+            //Remove package descriptors from array
+            if responseComponents.count > 2 {
+                compress(components : &responseComponents, outputSize : &decodeBufLength)
+            }
+            
+            for resp in responseComponents {
+                if Parser.string.isSerching(resp) && Parser.string.isStopped(resp){
+                    // A common reply if PID search occuring for the first time
+                    // at this drive cycle
+                    break
+                }
+                
+                // make byte array from string response
+                let chunks = resp.components(separatedBy: " ").filter({$0 != ""})
+                
+                for c in chunks {
+                    let value = Parser.string.toUInt8(hexString: c)
+                    decodeBuf.append(UInt8(value))
+                }
+            }//TODO: - Handle negative
+            
+            if decodeBufLength == 0 {
+                decodeBufLength = decodeBuf.count
+            }else{
+                decodeBufLength = min(decodeBufLength, decodeBuf.count)
+                decodeBuf.removeSubrange(decodeBufLength..<decodeBuf.count)
+            }
+            
+            response = decode(data: decodeBuf, length: decodeBufLength, command: command)
         }else{
-          decodeBufLength = min(decodeBufLength, decodeBuf.count)
-          decodeBuf.removeSubrange(decodeBufLength..<decodeBuf.count)
+            response.strigDescriptor = package.strigDescriptor
         }
-
-        response = decode(data: decodeBuf, length: decodeBufLength)
-      }else{
-        response.strigDescriptor = package.strigDescriptor
-      }
-      
-      response.rawData = package.buffer
-      
-      return response
+        
+        response.rawData = package.buffer
+        
+        return response
     }
     
-    func decode(data : [UInt8], length : Int) -> Response {
-      var resp = Response()
-      var dataIndex = 0
-
-      let modeRaw   = data[dataIndex] ^ 0x40
-      resp.mode     = Mode.init(rawValue: modeRaw) ?? .none
-      dataIndex     += 1
-      
-      if data.count > dataIndex {
-        resp.pid		= data[dataIndex]
-        dataIndex   += 1
-      }
-      
-      //Byte shift specialy for freezeframe data
-      // 42 0C 00 4E 20
-      // 42 - Mode
-      // 0C - Pid
-      // 00 - Shifted
-      // 4E 20 - Data equal to mode 1.
-      if resp.mode == .FreezeFrame02 {
-        dataIndex   += 1
-      }
-      
-      if data.count > dataIndex {
-        var mutatingData = data
-        mutatingData.removeSubrange(0..<dataIndex)
+    func decode(data : [UInt8], length : Int, command: DataRequest?) -> Response {
+        var resp = Response()
+        var dataIndex = 0
         
-        resp.data	  = Data.init(bytes: mutatingData, count: length - dataIndex)
-      }
-      
-      return resp
+        if let command = command, command.isRequestingVIN {
+            // VIN response must not be truncated. All bytes are part of the VIN
+            resp.mode = .RequestVehicleInfo09
+            resp.pid = 0x02
+            resp.data = Data.init(bytes: data, count: length - dataIndex)
+            return resp
+        }
+        
+        let modeRaw   = data[dataIndex] ^ 0x40
+        resp.mode     = Mode.init(rawValue: modeRaw) ?? .none
+        dataIndex     += 1
+        
+        if data.count > dataIndex {
+            resp.pid        = data[dataIndex]
+            dataIndex   += 1
+        }
+        
+        //Byte shift specialy for freezeframe data
+        // 42 0C 00 4E 20
+        // 42 - Mode
+        // 0C - Pid
+        // 00 - Shifted
+        // 4E 20 - Data equal to mode 1.
+        if resp.mode == .FreezeFrame02 {
+            dataIndex   += 1
+        }
+        
+        if data.count > dataIndex {
+            var mutatingData = data
+            mutatingData.removeSubrange(0..<dataIndex)
+            
+            resp.data = Data.init(bytes: mutatingData, count: length - dataIndex)
+        }
+        
+        return resp
     }
   }
 }

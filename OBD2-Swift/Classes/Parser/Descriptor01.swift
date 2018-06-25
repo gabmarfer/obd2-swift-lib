@@ -17,12 +17,17 @@ public class Mode01Descriptor : DescriptorProtocol {
     let pid = response.pid
     self.mode = response.mode
     
-    guard pid >= 0x0 && pid <= 0x4E else {
+    guard (pid >= 0x0 && pid <= 0x4E) || pid == 0x5C else {
       assertionFailure("Unsuported pid group")
       self.descriptor = SensorDescriptorTable[0]
       return
     }
-    self.descriptor = SensorDescriptorTable[Int(pid)]
+//    self.descriptor = SensorDescriptorTable[Int(pid)]
+    guard let descriptor = SensorDescriptorTable.first(where: { $0.pid == pid }) else {
+        self.descriptor = SensorDescriptorTable[0]
+        return
+    }
+    self.descriptor = descriptor
   }
   
   public var mode : Mode

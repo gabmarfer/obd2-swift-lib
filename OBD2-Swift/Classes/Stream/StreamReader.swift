@@ -38,6 +38,8 @@ extension String {
 
 class StreamReader {
     
+    
+    
     private let bufferSize = 512
     
     private(set) var readBuffer = [BufferType]()
@@ -66,11 +68,21 @@ class StreamReader {
         
         if readBuffer.elmReadComplete() {
             print("Read complete")
-            if (readBufferLenght - 3) > 0 && (readBufferLenght - 3) < readBuffer.count {
-                readBuffer[(readBufferLenght - 3)] = 0x00
-                readBufferLenght	-= 3
-            }
             
+//            // Clean buffer (replace OK> or > at the end of the buffer by end ascii character)
+//            if readBufferLenght > 3 {
+//                let okBytes = [BufferType]("OK>".utf8)
+//                let endByte = [BufferType](">".utf8)
+//
+//                if Array(readBuffer.suffix(3)) == okBytes {
+//                    readBuffer[(readBufferLenght - 3)] = 0x00
+//                    readBufferLenght -= 3
+//                } else if readBuffer.last == endByte.first {
+//                    readBuffer[(readBufferLenght - 1)] = 0x00
+//                    readBufferLenght -= 1
+//                }
+//            }
+
             let asciistr : [Int8] = readBuffer.map( { Int8(bitPattern: $0) } )
             let respString = String(cString: asciistr, encoding: String.Encoding.ascii) ?? ""
             

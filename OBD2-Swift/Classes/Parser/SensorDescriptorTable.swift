@@ -882,6 +882,19 @@ let SensorDescriptorTable : [SensorDescriptor] = [
                      INT_MAX,
                      INT_MAX,
                      calcTime,
-                     VOID_F )
+                     VOID_F ),
+    
+    //MARK:- PID 0x5C
+    SensorDescriptor(0x5C,
+                     "Engine oil temperature",
+                     "EOT",
+                     "˚C",
+                     -40,
+                     210,
+                     "˚F",
+                     -40,
+                     410,
+                     calcTemp,
+                     convertTemp),
 ]
 

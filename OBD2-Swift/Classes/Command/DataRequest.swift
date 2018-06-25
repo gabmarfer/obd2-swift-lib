@@ -19,7 +19,7 @@ public class DataRequest {
     convenience init(mode : Mode, pid : UInt8, param : String? = nil) {
         var description = ""
         
-        if pid >= 0x00 && pid <= 0x4E {
+        if (pid >= 0x00 && pid <= 0x4E) || pid == 0x5C { // Add support to pid 5C
             description = NSString.init(format: "%02lx %02lx", mode.rawValue, pid) as String
             
             //Additional for freeze frame request
@@ -35,6 +35,8 @@ public class DataRequest {
             description += (" " + param)
         }
         
+        description = description.uppercased()
+        
         self.init(from: description)
     }
     
@@ -42,6 +44,10 @@ public class DataRequest {
         let dataDescription = "\(self.description)\(kCarriageReturn)"
         return dataDescription.data(using: .ascii)
     }()
+    
+    var isRequestingVIN: Bool {
+        return description == "09 02"
+    }
 }
 
 extension DataRequest: Equatable {

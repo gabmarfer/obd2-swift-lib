@@ -29,7 +29,7 @@ open class OBD2 {
     }
     
     public convenience init(){
-        self.init(host : "192.168.0.10", port : 35000)
+        self.init(host : "192.168.1.72", port : 35000)
     }
     
     public init(host : String, port : Int){
